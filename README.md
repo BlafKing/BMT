@@ -6,7 +6,7 @@ It does this by unpacking and combining all the files into a new .var package an
 
 
 How to use:
-1. Simply open BMT.exe
+1. Simply open BMT.exe (or BMT.py if you have python installed and know how to use it)
 2. Select all the .var files you want to merge into one.
 3. Select a save location and name for the new .var file
 4. Profit :)
