@@ -178,6 +178,8 @@ def prompt_options(artist_name, user_input_name, file_version, final_output):
         
         prompt_options(artist_name, user_input_name, file_version, final_output)
     elif option == "4":
+        os.system('cls')
+        combine_var_files(var_files, final_output, user_input_name, artist_name)
         return
     else:
         prompt_options(artist_name, user_input_name, file_version, final_output)
@@ -221,11 +223,8 @@ if __name__ == "__main__":
     os.system('cls')
     window_to_front()
     prompt_options(artist_name, user_input_name, file_version, final_output)
-    
     os.system('cls')
     
-    combine_var_files(var_files, final_output, user_input_name, artist_name)
-    os.system('cls')
     end_message(final_output)
     window_to_front()
     input("")
