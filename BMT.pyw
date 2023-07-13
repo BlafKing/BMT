@@ -127,7 +127,7 @@ class MergeToolGUI:
         s.button_frame.pack(side=tk.LEFT, fill=tk.X, expand=True)
 
         s.merge_button = ttk.Button(s.button_frame, text="Merge Files", command=s.start_merge, width=wide_button_width)
-        s.merge_button.pack(padx=(0, 199))
+        s.merge_button.pack(padx=(0, 192))
 
         s.progress_label = ttk.Label(s.root, text="")
         s.progress_label.pack(padx=10, pady=(5, 5))
