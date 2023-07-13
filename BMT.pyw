@@ -265,15 +265,15 @@ class MergeToolGUI:
         s.save_entry.delete(0, tk.END)
         s.save_entry.insert(tk.END, s.output_file)
 
-    def set_button_state(s, add_file_state, add_file_color, save_state, save_color, other_state, other_color, checkbox_state):
+    def set_button_state(s, add_file_state, add_file_color, save_state, save_color, other_state, other_color):
         s.add_file_button.config(state=add_file_state, style=add_file_color)
         s.save_button.config(state=save_state, style=save_color)
         s.edit_artist_button.config(state=other_state, style=other_color)
         s.edit_version_button.config(state=other_state, style=other_color)
         s.edit_package_button.config(state=other_state, style=other_color)
         s.merge_button.config(state=other_state, style=other_color)
-        s.merge_checkbox1.config(state=checkbox_state)
-        s.merge_checkbox2.config(state=checkbox_state)
+        s.merge_checkbox1.config(state=add_file_state)
+        s.merge_checkbox2.config(state=add_file_state)
 
     def disable_buttons_init(s):
         s.button_style.configure("White.TButton", foreground="white")
@@ -284,26 +284,22 @@ class MergeToolGUI:
         
         s.set_button_state(tk.NORMAL, "White.TButton",
                            tk.DISABLED, "Grey.TButton",
-                           tk.DISABLED, "Grey.TButton",
-                           tk.NORMAL)
+                           tk.DISABLED, "Grey.TButton")
 
     def disable_buttons(s):
         s.set_button_state(tk.DISABLED, "Grey.TButton",
                            tk.DISABLED, "Grey.TButton",
-                           tk.DISABLED, "Grey.TButton",
-                           tk.DISABLED)
+                           tk.DISABLED, "Grey.TButton")
 
     def enable_buttons(s):
         s.set_button_state(tk.NORMAL, "White.TButton",
                            tk.NORMAL, "White.TButton",
-                           tk.NORMAL, "White.TButton",
-                           tk.NORMAL)
+                           tk.NORMAL, "White.TButton")
 
     def enable_buttons_file(s):
         s.set_button_state(tk.NORMAL, "White.TButton",
                            tk.NORMAL, "White.TButton",
-                           tk.DISABLED, "Grey.TButton",
-                           tk.DISABLED)
+                           tk.DISABLED, "Grey.TButton")
     
     def clean_window(s):
         s.file_listbox.delete(0, tk.END)
