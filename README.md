@@ -22,9 +22,10 @@ This script can be used both as a packaged .exe or as a python script.
 
 ### Python:
 1. Make sure [Python](https://www.python.org/downloads/) is installed (I used Python 3.11)
-2. Download the latest Source Code (.zip) from [Releases](https://github.com/BlafKing/BMT/releases/latest)
-3. Once the download is finished, extract the contents of the ZIP file to your desired location.
-4. Open up BMT.pyw
-5. Select the files you want to merge
-6. Select a save location
-7. Click 'Merge Files'
+2. Install the required library 'demjson3' with `pip install demjson3`
+3. Download the latest Source Code (.zip) from [Releases](https://github.com/BlafKing/BMT/releases/latest)
+4. Once the download is finished, extract the contents of the ZIP file to your desired location.
+5. Open up BMT.pyw
+6. Select the files you want to merge
+7. Select a save location
+8. Click 'Merge Files'
