@@ -42,7 +42,7 @@ class MergeToolGUI:
         s.output_file = ""
         s.merge_thread = None
         button_width = 20
-        wide_button_width = 20
+        wide_button_width = 25
         s.root = tk.Tk()
         s.root.title("BlafKing's .var Merge Tool (BMT)")
         s.root.minsize(650, 500)
@@ -500,7 +500,6 @@ class MergeToolGUI:
                 s.clean_window()
                 s.disable_buttons_init()
                 
-
         except Exception as e:
             error_message = f"Exception occurred during merge:\n{traceback.format_exc()}"
 
