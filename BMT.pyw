@@ -3,6 +3,7 @@ import sys
 import json
 import shutil
 import zipfile
+import demjson3
 import tempfile
 import threading
 import traceback
@@ -16,19 +17,15 @@ from tkinter import ttk, filedialog, messagebox, simpledialog
 class MergeToolGUI:
     def __init__(s):
         
-        s.var_files = []
-        s.artist_name = ""
-        s.package_name = ""
-        s.version_number = ""
-        s.output_file = ""
-        s.merge_thread = None
-        button_width = 20
-        wide_button_width = 25
-
-        s.root = tk.Tk()
-        s.root.title("BlafKing's .var Merge Tool (BMT)")
-        s.root.minsize(650, 500)
-        s.root.pack_propagate(False)
+        appdata_dir = os.path.join(os.getenv('LOCALAPPDATA'), 'BMT')
+        os.makedirs(appdata_dir, exist_ok=True)
+        s.settings_file = os.path.join(appdata_dir, 'settings.cfg')
+        
+        if not os.path.exists(s.settings_file):
+            open(s.settings_file, 'a').close()
+        
+        s.last_files_folder = s.load_last_folder("last_files_folder")
+        s.last_save_folder = s.load_last_folder("last_save_folder")
         
         s.dir = os.path.dirname(os.path.abspath(__file__))
         if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
@@ -37,7 +34,19 @@ class MergeToolGUI:
         else:
             s.theme_path = os.path.join(s.dir, 'azure.tcl')
             s.icon_path = os.path.join(s.dir, 'icon.ico')
-
+        
+        s.var_files = []
+        s.artist_name = ""
+        s.package_name = ""
+        s.version_number = ""
+        s.output_file = ""
+        s.merge_thread = None
+        button_width = 20
+        wide_button_width = 20
+        s.root = tk.Tk()
+        s.root.title("BlafKing's .var Merge Tool (BMT)")
+        s.root.minsize(650, 500)
+        s.root.pack_propagate(False)
         s.root.tk.call("source", s.theme_path)
         s.root.tk.call("set_theme", "dark")
         s.root.iconbitmap(default=s.icon_path)
@@ -89,28 +98,85 @@ class MergeToolGUI:
         s.edit_package_button = ttk.Button(s.edit_frame, text="Edit Package Name", command=s.edit_package_name, width=button_width)
         s.edit_package_button.pack(pady=(5, 0))
 
-        s.merge_button = ttk.Button(s.root, text="Merge Files", command=s.start_merge, width=wide_button_width)
-        s.merge_button.pack(pady=(30, 0))
-        
+        s.merge_frame = ttk.Frame(s.root)
+        s.merge_frame.pack(fill=tk.X, padx=10, pady=(35, 0))
+
+        s.checkboxes_frame = ttk.Frame(s.merge_frame)
+        s.checkboxes_frame.pack(side=tk.LEFT, padx=(0, 5))
+
+        s.openFolder = tk.IntVar()
+        s.openFolder.set(s.load_checkbox_state(1))
+        s.merge_checkbox1 = ttk.Checkbutton(s.checkboxes_frame, variable=s.openFolder, command=s.update_checkbox_state)
+        s.merge_checkbox1.pack(side=tk.TOP)
+
+        s.closeProgram = tk.IntVar()
+        s.closeProgram.set(s.load_checkbox_state(2))
+        s.merge_checkbox2 = ttk.Checkbutton(s.checkboxes_frame, variable=s.closeProgram, command=s.update_checkbox_state)
+        s.merge_checkbox2.pack(side=tk.TOP)
+
+        s.labels_frame = ttk.Frame(s.merge_frame)
+        s.labels_frame.pack(side=tk.LEFT)
+
+        label1 = ttk.Label(s.labels_frame, text="Open folder after merge", anchor=tk.W)
+        label1.pack(side=tk.TOP, anchor=tk.W, pady=(0, 7))
+
+        label2 = ttk.Label(s.labels_frame, text="Exit program after merge", anchor=tk.W)
+        label2.pack(side=tk.TOP, anchor=tk.W, pady=(0, 1))
+
+        s.button_frame = ttk.Frame(s.merge_frame)
+        s.button_frame.pack(side=tk.LEFT, fill=tk.X, expand=True)
+
+        s.merge_button = ttk.Button(s.button_frame, text="Merge Files", command=s.start_merge, width=wide_button_width)
+        s.merge_button.pack(padx=(0, 199))
+
         s.progress_label = ttk.Label(s.root, text="")
-        s.progress_label.pack(padx=10, pady=(0, 5))
+        s.progress_label.pack(padx=10, pady=(5, 5))
         
         s.progressbar = ttk.Progressbar(s.root, orient=tk.HORIZONTAL, mode='determinate')
         s.progressbar.pack(side=tk.BOTTOM, fill=tk.X, padx=10, pady=5)
 
         s.disable_buttons_init()
-
+    
     def run(s):
-        s.SaveLocation = True
         s.root.mainloop()
 
+    def load_checkbox_state(s, checkbox_index):
+        with open(s.settings_file, 'r') as f:
+            try:
+                settings = json.load(f)
+                checkbox_state = settings.get(f"checkbox{checkbox_index}")
+                if checkbox_state is not None:
+                    return checkbox_state
+            except (ValueError, json.JSONDecodeError):
+                pass
+
+        return 0
+    
+    def update_checkbox_state(s):
+        openFolder_state = s.openFolder.get()
+        closeProgram_state = s.closeProgram.get()
+
+        with open(s.settings_file, 'r') as f:
+            try:
+                settings = json.load(f)
+            except (ValueError, json.JSONDecodeError):
+                settings = {}
+
+        settings["checkbox1"] = openFolder_state
+        settings["checkbox2"] = closeProgram_state
+
+        with open(s.settings_file, 'w') as f:
+            json.dump(settings, f)
+    
     def select_var_files(s):
-        file_paths = filedialog.askopenfilenames(filetypes=[("VAR Files", "*.var")])
+        file_paths = filedialog.askopenfilenames(filetypes=[("VAR Files", "*.var")], initialdir=s.last_files_folder)
         if file_paths:
             s.var_files = list(file_paths)
             s.display_selected_files()
-            if s.SaveLocation:
-                s.enable_buttons_file()
+            s.enable_buttons_file()
+            s.save_last_folder("last_files_folder", os.path.dirname(s.var_files[0]))
+            s.save_entry.delete(0, tk.END)
+            s.output_file = ""
 
     def display_selected_files(s):
         s.file_listbox.delete(0, tk.END)
@@ -119,7 +185,7 @@ class MergeToolGUI:
         s.update_save_location()
 
     def choose_save_location(s):
-        folder_path = filedialog.askdirectory()
+        folder_path = filedialog.askdirectory(initialdir=s.last_save_folder)
         if folder_path:
             package_name = f"{s.artist_name}.{s.package_name}.{s.version_number}"
             s.output_file = os.path.normpath(os.path.join(folder_path, package_name + ".var"))
@@ -127,6 +193,7 @@ class MergeToolGUI:
             s.save_entry.insert(tk.END, s.output_file)
             s.SaveLocation = False
             s.enable_buttons()
+            s.save_last_folder("last_save_folder", folder_path)
 
     def edit_artist_name(s):
         artist_name = s.get_user_input("Enter the new artist name:")
@@ -150,6 +217,32 @@ class MergeToolGUI:
         user_input = simpledialog.askstring("Input", prompt)
         return user_input.strip() if user_input else None
 
+    def save_last_folder(s, folder_name, folder_path):
+        if not os.path.isfile(s.settings_file):
+            settings = {}
+        else:
+            with open(s.settings_file, 'r') as f:
+                try:
+                    settings = json.load(f)
+                except (ValueError, json.JSONDecodeError):
+                    settings = {}
+        
+        settings[folder_name] = folder_path
+        
+        with open(s.settings_file, 'w') as f:
+            json.dump(settings, f)
+    
+    def load_last_folder(s, folder_name):
+        if not os.path.isfile(s.settings_file):
+            return ""
+        
+        with open(s.settings_file, 'r') as f:
+            try:
+                settings = json.load(f)
+                return settings.get(folder_name, "")
+            except (ValueError, json.JSONDecodeError):
+                return ""
+    
     def update_save_location(s):
         if not s.artist_name:
             artist_name_counts = Counter()
@@ -172,6 +265,54 @@ class MergeToolGUI:
         s.save_entry.delete(0, tk.END)
         s.save_entry.insert(tk.END, s.output_file)
 
+    def set_button_state(s, add_file_state, add_file_color, save_state, save_color, other_state, other_color, checkbox_state):
+        s.add_file_button.config(state=add_file_state, style=add_file_color)
+        s.save_button.config(state=save_state, style=save_color)
+        s.edit_artist_button.config(state=other_state, style=other_color)
+        s.edit_version_button.config(state=other_state, style=other_color)
+        s.edit_package_button.config(state=other_state, style=other_color)
+        s.merge_button.config(state=other_state, style=other_color)
+        s.merge_checkbox1.config(state=checkbox_state)
+        s.merge_checkbox2.config(state=checkbox_state)
+
+    def disable_buttons_init(s):
+        s.button_style.configure("White.TButton", foreground="white")
+        s.button_style.configure("Grey.TButton", foreground="grey")
+        s.button_style.map("Grey.TButton",
+                        foreground=[("disabled", "grey")],
+                        background=[("disabled", "!focus", "grey")])
+        
+        s.set_button_state(tk.NORMAL, "White.TButton",
+                           tk.DISABLED, "Grey.TButton",
+                           tk.DISABLED, "Grey.TButton",
+                           tk.NORMAL)
+
+    def disable_buttons(s):
+        s.set_button_state(tk.DISABLED, "Grey.TButton",
+                           tk.DISABLED, "Grey.TButton",
+                           tk.DISABLED, "Grey.TButton",
+                           tk.DISABLED)
+
+    def enable_buttons(s):
+        s.set_button_state(tk.NORMAL, "White.TButton",
+                           tk.NORMAL, "White.TButton",
+                           tk.NORMAL, "White.TButton",
+                           tk.NORMAL)
+
+    def enable_buttons_file(s):
+        s.set_button_state(tk.NORMAL, "White.TButton",
+                           tk.NORMAL, "White.TButton",
+                           tk.DISABLED, "Grey.TButton",
+                           tk.DISABLED)
+    
+    def clean_window(s):
+        s.file_listbox.delete(0, tk.END)
+        s.var_files = []
+        s.save_entry.delete(0, tk.END)
+        s.output_file = ""
+        s.progress_label.configure(text="")
+        s.progressbar["value"] = 0
+
     def start_merge(s):
         if len(s.var_files) == 0:
             messagebox.showinfo("Error", "No files selected.")
@@ -185,7 +326,7 @@ class MergeToolGUI:
             s.progressbar["maximum"] = len(s.var_files)
             s.progressbar["value"] = 0
             s.merge_thread = threading.Thread(target=s.merge_files_thread)
-            s.merge_thread.start()
+            s.merge_thread.start()        
 
     def merge_files_thread(s):
         artist_name_counts = Counter()
@@ -198,53 +339,38 @@ class MergeToolGUI:
         s.artist_name = artist[0][0] if artist else ""
 
         s.merge_files()
+    
+    def load_valid_json_file(s, file_path):
+        try:
+            with open(file_path, 'r', encoding='utf-8-sig') as f:
+                return json.load(f)
+        except (ValueError, json.JSONDecodeError):
+            print(f"Error with {file_path}, Attempting fix.")
+            with open(file_path, 'r', encoding='utf-8-sig') as f:
+                content = f.read()
             
-
-    def set_button_state(s, add_file_state, add_file_color, save_state, save_color, artist_state, artist_color, version_state, version_color, package_state, package_color, merge_state, merge_color):
-        s.add_file_button.config(state=add_file_state, style=add_file_color)
-        s.save_button.config(state=save_state, style=save_color)
-        s.edit_artist_button.config(state=artist_state, style=artist_color)
-        s.edit_version_button.config(state=version_state, style=version_color)
-        s.edit_package_button.config(state=package_state, style=package_color)
-        s.merge_button.config(state=merge_state, style=merge_color)
-
-    def disable_buttons_init(s):
-        s.button_style.configure("White.TButton", foreground="white")
-        s.button_style.configure("Grey.TButton", foreground="grey")
-        s.button_style.map("Grey.TButton",
-                        foreground=[("disabled", "grey")],
-                        background=[("disabled", "!focus", "grey")])
-        
-        s.set_button_state(tk.NORMAL, "White.TButton",
-                           tk.DISABLED, "Grey.TButton",
-                           tk.DISABLED, "Grey.TButton",
-                           tk.DISABLED, "Grey.TButton",
-                           tk.DISABLED, "Grey.TButton",
-                           tk.DISABLED, "Grey.TButton")
-
-    def disable_buttons(s):
-        s.set_button_state(tk.DISABLED, "Grey.TButton",
-                           tk.DISABLED, "Grey.TButton",
-                           tk.DISABLED, "Grey.TButton",
-                           tk.DISABLED, "Grey.TButton",
-                           tk.DISABLED, "Grey.TButton",
-                           tk.DISABLED, "Grey.TButton")
-
-    def enable_buttons(s):
-        s.set_button_state(tk.NORMAL, "White.TButton",
-                           tk.NORMAL, "White.TButton",
-                           tk.NORMAL, "White.TButton",
-                           tk.NORMAL, "White.TButton",
-                           tk.NORMAL, "White.TButton",
-                           tk.NORMAL, "White.TButton")
-
-    def enable_buttons_file(s):
-        s.set_button_state(tk.NORMAL, "White.TButton",
-                           tk.NORMAL, "White.TButton",
-                           tk.DISABLED, "Grey.TButton",
-                           tk.DISABLED, "Grey.TButton",
-                           tk.DISABLED, "Grey.TButton",
-                           tk.DISABLED, "Grey.TButton")
+            index = content.find('contentList')
+            if index != -1:
+                content = content[:index] + content[index:].replace('\\', '/')
+                content = content[:index] + content[index:].replace('//', '/')
+            
+            lines = content.split('\n')
+            for i in range(len(lines) - 1):
+                line = lines[i]
+                next_line = lines[i + 1]
+                if line.strip().endswith('"') and len(next_line.strip()) > 0 and next_line.strip()[0] == '"':
+                    print("missing found")
+                    lines[i] = line.rstrip() + ','
+            
+            content = '\n'.join(lines)
+            print(content)
+            try:
+                fixed_json = demjson3.decode(content)
+                print(f"{file_path} has been successfully fixed.")
+                return fixed_json
+            except demjson3.JSONDecodeError as e:
+                print("Unable to fix JSON:", e)
+                return None
 
     def merge_files(s):
         try:
@@ -254,7 +380,7 @@ class MergeToolGUI:
             existing_files = set()
             highest_program_version = None
             unusable_files = []
-            
+
             for i, file_path in enumerate(s.var_files):
                 s.progress_label.configure(text=f"Checking files: {file_path}")
                 try:
@@ -263,14 +389,18 @@ class MergeToolGUI:
                         for file_name in file_list:
                             try:
                                 zip_ref.open(file_name)
+                                
                             except BadZipFile:
                                 unusable_files.append(file_path)
                                 break
                 except Exception as e:
                     unusable_files.append(file_path)
-                    
+
             if unusable_files:
-                response = messagebox.askquestion("Unable to process", f"The following files are unable to be processed:\n\n{unusable_files}\n\nDo you want to continue without them?")
+                response = messagebox.askquestion(
+                    "Unable to process",
+                    f"The following files are unable to be processed:\n\n{unusable_files}\n\nDo you want to continue without them?"
+                )
                 if response == 'no':
                     os._exit(0)
 
@@ -279,24 +409,30 @@ class MergeToolGUI:
             with zipfile.ZipFile(temp_output_file.name, 'w', zipfile.ZIP_DEFLATED) as zipf:
                 for i, file_path in enumerate(s.var_files):
                     s.update_progress(i + 1)
+                    
                     if file_path in unusable_files:
                         continue
-                    
+
                     s.progress_label.configure(text=f"Merging files: {file_path}")
-                    
+
                     temp_dir = tempfile.mkdtemp()
                     with zipfile.ZipFile(file_path, 'r') as zip_ref:
                         zip_ref.extractall(temp_dir)
 
                     meta_file = os.path.join(temp_dir, "meta.json")
-                    with open(meta_file, 'r', encoding='utf-8') as f:
-                        meta_data = json.load(f)
+                    meta_data = s.load_valid_json_file(meta_file)
+                    if meta_data is None:
+                        unusable_files.append(file_path)
+                        shutil.rmtree(temp_dir)
+                        continue
 
-                    combined_content_list.update(meta_data["contentList"])
+                    combined_content_list.update(meta_data.get("contentList", []))
 
-                    for dep, dep_data in meta_data["dependencies"].items():
-                        combined_dependencies.setdefault(dep, {}).setdefault("dependencies", {}).update(
-                            dep_data["dependencies"])
+                    dependencies = meta_data.get("dependencies")
+                    if dependencies:
+                        for dep, dep_data in dependencies.items():
+                            combined_dependencies.setdefault(dep, {}).setdefault("dependencies", {}).update(
+                                dep_data.get("dependencies", {}))
 
                     program_version = meta_data.get("programVersion")
                     if program_version and (highest_program_version is None or program_version > highest_program_version):
@@ -347,24 +483,41 @@ class MergeToolGUI:
             temp_output_file.close()
 
             shutil.move(temp_output_file.name, s.output_file)
-            messagebox.showinfo("Merge Complete", "All files merged successfully.")
+            if unusable_files:
+                messagebox.showinfo(
+                    "Merge Complete",
+                    f"The following files were unable to be processed and are not included in the final package:\n\n{unusable_files}"
+                )
+            else:
+                messagebox.showinfo("Merge Complete", "All files merged successfully.")
 
-            subprocess.Popen(f'explorer /select,"{s.output_file}"')
-            s.root.quit()
-            
+            if s.openFolder.get() == 1:
+                subprocess.Popen(f'explorer /select,"{s.output_file}"')
+
+            if s.closeProgram.get() == 1:
+                os._exit(0) 
+            else:
+                s.clean_window()
+                s.disable_buttons_init()
+                
+
         except Exception as e:
             error_message = f"Exception occurred during merge:\n{traceback.format_exc()}"
+
+            current_file = s.var_files[s.progressbar["value"] - 1]
+            error_message += f"\n\nError occurred in file: {current_file}"
+
             current_datetime = datetime.now().strftime("%Y%m%d-%H%M%S")
             errorlog_filename = f"Error_{current_datetime}.txt"
             errorlog_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), errorlog_filename)
             with open(errorlog_path, "w") as errorlog_file:
                 errorlog_file.write(error_message)
-            messagebox.showerror("Merge Error", f"An error occurred during the merge process. error log saved to: {errorlog_path}")
+            messagebox.showerror("Merge Error", f"An error occurred during the merge process. Error log saved to: {errorlog_path}")
+            os._exit(1)
 
     def update_progress(s, value):
         s.progressbar["value"] = value
         s.root.update_idletasks()
-
 
 if __name__ == "__main__":
     merge_tool_gui = MergeToolGUI()
