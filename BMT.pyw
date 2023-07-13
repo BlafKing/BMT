@@ -112,16 +112,16 @@ class MergeToolGUI:
         s.closeProgram = tk.IntVar()
         s.closeProgram.set(s.load_checkbox_state(2))
         s.merge_checkbox2 = ttk.Checkbutton(s.checkboxes_frame, variable=s.closeProgram, command=s.update_checkbox_state)
-        s.merge_checkbox2.pack(side=tk.TOP)
+        s.merge_checkbox2.pack(side=tk.TOP, pady=(3,3))
 
         s.labels_frame = ttk.Frame(s.merge_frame)
         s.labels_frame.pack(side=tk.LEFT)
 
         label1 = ttk.Label(s.labels_frame, text="Open folder after merge", anchor=tk.W)
-        label1.pack(side=tk.TOP, anchor=tk.W, pady=(0, 7))
+        label1.pack(side=tk.TOP, anchor=tk.W, pady=(0, 10))
 
         label2 = ttk.Label(s.labels_frame, text="Exit program after merge", anchor=tk.W)
-        label2.pack(side=tk.TOP, anchor=tk.W, pady=(0, 1))
+        label2.pack(side=tk.TOP, anchor=tk.W, pady=(0, 5))
 
         s.button_frame = ttk.Frame(s.merge_frame)
         s.button_frame.pack(side=tk.LEFT, fill=tk.X, expand=True)
@@ -351,15 +351,22 @@ class MergeToolGUI:
                 content = content[:index] + content[index:].replace('//', '/')
             
             lines = content.split('\n')
-            for i in range(len(lines) - 1):
+            i = 0
+            while i < len(lines) - 2:
                 line = lines[i]
                 next_line = lines[i + 1]
-                if line.strip().endswith('"') and len(next_line.strip()) > 0 and next_line.strip()[0] == '"':
-                    print("missing found")
-                    lines[i] = line.rstrip() + ','
+                third_line = lines[i + 2]
+                
+                if next_line.strip() == '}' and (line.strip() == '}' or third_line.strip().startswith('"customOptions')):
+                    lines.pop(i + 1)
+                else:
+                    if line.strip().endswith('"') and len(next_line.strip()) > 0 and next_line.strip()[0] == '"':
+                        lines[i] = line.rstrip() + ','
+                    i += 1
             
             content = '\n'.join(lines)
             print(content)
+            
             try:
                 fixed_json = demjson3.decode(content)
                 print(f"{file_path} has been successfully fixed.")
