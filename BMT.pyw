@@ -99,10 +99,10 @@ class MergeToolGUI:
         s.edit_package_button.pack(pady=(5, 0))
 
         s.merge_frame = ttk.Frame(s.root)
-        s.merge_frame.pack(fill=tk.X, padx=10, pady=(35, 0))
+        s.merge_frame.pack(fill=tk.X, padx=0, pady=(25, 0))
 
         s.checkboxes_frame = ttk.Frame(s.merge_frame)
-        s.checkboxes_frame.pack(side=tk.LEFT, padx=(0, 5))
+        s.checkboxes_frame.pack(side=tk.LEFT, padx=(12, 0))
 
         s.openFolder = tk.IntVar()
         s.openFolder.set(s.load_checkbox_state(1))
@@ -127,10 +127,10 @@ class MergeToolGUI:
         s.button_frame.pack(side=tk.LEFT, fill=tk.X, expand=True)
 
         s.merge_button = ttk.Button(s.button_frame, text="Merge Files", command=s.start_merge, width=wide_button_width)
-        s.merge_button.pack(padx=(0, 192))
+        s.merge_button.pack(padx=(0, 200))
 
         s.progress_label = ttk.Label(s.root, text="")
-        s.progress_label.pack(padx=10, pady=(5, 5))
+        s.progress_label.pack()
         
         s.progressbar = ttk.Progressbar(s.root, orient=tk.HORIZONTAL, mode='determinate')
         s.progressbar.pack(side=tk.BOTTOM, fill=tk.X, padx=10, pady=5)
