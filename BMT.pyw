@@ -352,18 +352,29 @@ class MergeToolGUI:
             
             lines = content.split('\n')
             i = 0
-            while i < len(lines) - 2:
+            while i < len(lines) - 3:
                 line = lines[i]
                 next_line = lines[i + 1]
                 third_line = lines[i + 2]
+                fourth_line = lines[i + 3]
                 
-                if next_line.strip() == '}' and (line.strip() == '}' or third_line.strip().startswith('"customOptions')):
+                if line.strip().endswith(',') and next_line.strip() == '}' and third_line.strip() == '},' and fourth_line.strip().startswith('"customOptions'):
+                    lines[i] = line.rstrip()[:-1]
+                
+                if line.strip().endswith('{') and next_line.strip() == '}' and third_line.strip() == '},' and fourth_line.strip().startswith('"customOptions'):
+                    indentation = '\t' * (line.count('\t') - 1)
+                    new_line = f'{indentation}}},'
+                    third_line.rstrip(',')
+                    lines.insert(i + 3, new_line)
+                
+                if line.strip().endswith('}') and next_line.strip() == '}' and third_line.strip() == '},' and fourth_line.strip().startswith('"customOptions'):
                     lines.pop(i + 1)
-                else:
-                    if line.strip().endswith('"') and len(next_line.strip()) > 0 and next_line.strip()[0] == '"':
-                        lines[i] = line.rstrip() + ','
-                    i += 1
-            
+                
+                if line.strip().endswith('"') and len(next_line.strip()) > 0 and next_line.strip()[0] == '"':
+                    lines[i] = line.rstrip() + ','
+
+                i += 1
+
             content = '\n'.join(lines)
             print(content)
             
