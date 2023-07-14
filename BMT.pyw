@@ -347,7 +347,7 @@ class MergeToolGUI:
 
             lines = content.split('\n')
             i = 0
-            while i < len(lines) - 4:  # Modified line to account for the new correction
+            while i < len(lines) - 4:
                 line = lines[i]
                 next_line = lines[i + 1]
                 third_line = lines[i + 2]
@@ -380,7 +380,6 @@ class MergeToolGUI:
 
                 i += 1
             content = '\n'.join(lines)
-            print(content)
             try:
                 fixed_json = demjson3.decode(content)
                 print(f"{file_path} has been successfully fixed.")
@@ -472,7 +471,6 @@ class MergeToolGUI:
 
                     s.update_progress(i + 1)
 
-            s.progress_label.configure(text=f"Merging completed!")
             combined_content_list = sorted(combined_content_list)
             combined_dependencies = dict(sorted(combined_dependencies.items()))
 
@@ -500,6 +498,8 @@ class MergeToolGUI:
             temp_output_file.close()
 
             shutil.move(temp_output_file.name, s.output_file)
+            s.progress_label.configure(text=f"Merging completed!")
+            
             if unusable_files:
                 messagebox.showinfo(
                     "Merge Complete",
