@@ -344,40 +344,43 @@ class MergeToolGUI:
             print(f"Error with {file_path}, Attempting fix.")
             with open(file_path, 'r', encoding='utf-8-sig') as f:
                 content = f.read()
-            
-            index = content.find('contentList')
-            if index != -1:
-                content = content[:index] + content[index:].replace('\\', '/')
-                content = content[:index] + content[index:].replace('//', '/')
-            
+
             lines = content.split('\n')
             i = 0
-            while i < len(lines) - 3:
+            while i < len(lines) - 4:  # Modified line to account for the new correction
                 line = lines[i]
                 next_line = lines[i + 1]
                 third_line = lines[i + 2]
                 fourth_line = lines[i + 3]
-                
+
+                if line.strip().startswith('"') and line.count('/') >= 2 and next_line.strip() == '},' and third_line.strip().startswith('"'):
+                    lines[i + 1] = '],'
+
+                if line.strip().startswith('"') and line.count('/') >= 2 and next_line.strip().startswith('"') and line.count('/') >= 2:
+                    if not line.strip().endswith('",'):
+                        if line.strip().endswith('"'):
+                            lines[i] = line.rstrip() + ','
+                        else:
+                            lines[i] = line.rstrip() + '",'
+
                 if line.strip().endswith(',') and next_line.strip() == '}' and third_line.strip() == '},' and fourth_line.strip().startswith('"customOptions'):
                     lines[i] = line.rstrip()[:-1]
-                
+
                 if line.strip().endswith('{') and next_line.strip() == '}' and third_line.strip() == '},' and fourth_line.strip().startswith('"customOptions'):
                     indentation = '\t' * (line.count('\t') - 1)
                     new_line = f'{indentation}}},'
                     third_line.rstrip(',')
                     lines.insert(i + 3, new_line)
-                
+
                 if line.strip().endswith('}') and next_line.strip() == '}' and third_line.strip() == '},' and fourth_line.strip().startswith('"customOptions'):
                     lines.pop(i + 1)
-                
+
                 if line.strip().endswith('"') and len(next_line.strip()) > 0 and next_line.strip()[0] == '"':
                     lines[i] = line.rstrip() + ','
 
                 i += 1
-
             content = '\n'.join(lines)
             print(content)
-            
             try:
                 fixed_json = demjson3.decode(content)
                 print(f"{file_path} has been successfully fixed.")
