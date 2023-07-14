@@ -345,6 +345,11 @@ class MergeToolGUI:
             with open(file_path, 'r', encoding='utf-8-sig') as f:
                 content = f.read()
 
+            index = content.find('contentList')
+            if index != -1:
+                content = content[:index] + content[index:].replace('\\', '/')
+                content = content[:index] + content[index:].replace('//', '/')
+            
             lines = content.split('\n')
             i = 0
             while i < len(lines) - 4:
