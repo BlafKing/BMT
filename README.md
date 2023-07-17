@@ -17,7 +17,8 @@ This script can be used both as a packaged .exe or as a python script.
 2. Once the download is finished, Open up BMT.exe
 3. Select the files you want to merge
 4. Select a save location
-5. Click 'Merge Files'
+5. Click 'Merge Files'  
+
 NOTE: Using the option to set the dependencies to .latest can break some packages! (not any existing packages)
 
 ### Python:
@@ -27,6 +28,7 @@ NOTE: Using the option to set the dependencies to .latest can break some package
 4. Once the download is finished, extract the contents of the ZIP file to your desired location.
 5. Open up BMT.pyw
 6. Select the files you want to merge
-7. Select a save location
-8. Click 'Merge Files'
+7. Select a save location  
+8. Click 'Merge Files'  
+
 NOTE: Using the option to set the dependencies to .latest can break some packages! (not any existing packages)
