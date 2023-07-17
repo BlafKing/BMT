@@ -18,7 +18,7 @@ This script can be used both as a packaged .exe or as a python script.
 3. Select the files you want to merge
 4. Select a save location
 5. Click 'Merge Files'
-
+NOTE: Using the option to set the dependencies to .latest can break some packages! (not any existing packages)
 
 ### Python:
 1. Make sure [Python](https://www.python.org/downloads/) is installed (I used Python 3.11)
@@ -29,3 +29,4 @@ This script can be used both as a packaged .exe or as a python script.
 6. Select the files you want to merge
 7. Select a save location
 8. Click 'Merge Files'
+NOTE: Using the option to set the dependencies to .latest can break some packages! (not any existing packages)
