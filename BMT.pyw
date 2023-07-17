@@ -231,15 +231,31 @@ class MergeToolGUI:
 
     def edit_version_number(s):
         version_number = s.get_user_input("Enter the new version number:", default_text=s.version_number)
-        if version_number:
+        if version_number.replace('.', '', 1).isdigit():
             s.version_number = version_number
             s.update_save_location()
 
     def get_user_input(s, prompt, default_text=None):
+        root = tk.Tk()
+        root.withdraw()
+
         initial_value = default_text if default_text is not None else ""
         user_input = simpledialog.askstring("Input", prompt, initialvalue=initial_value)
-        return user_input.strip() if user_input else None
 
+        if user_input:
+            valid_input = ''.join(char for char in user_input if s.validate_input(char))
+            return valid_input.strip() if valid_input else None
+        
+        else:
+            return None
+
+    def validate_input(s, char):
+        disallowed_chars = r'<>:"/\|?*'
+        if char in disallowed_chars:
+            return False
+
+        return True
+    
     def save_last_folder(s, folder_name, folder_path):
         if not os.path.isfile(s.settings_file):
             settings = {}
@@ -535,10 +551,10 @@ class MergeToolGUI:
                 "packageName": s.package_name,
                 "standardReferenceVersionOption": "Latest",
                 "scriptReferenceVersionOption": "Exact",
-                "description": "This Package has been merged by BlafKing's Merge Tool",
-                "credits": "",
-                "instructions": "",
-                "promotionalLink": "",
+                "description": "UniversenS MegaPack\nPackaged by BlafKing",
+                "credits": "patreon.com/universens\nPackaged by BlafKing",
+                "instructions": "patreon.com/universens",
+                "promotionalLink": "patreon.com/universens",
                 "programVersion": highest_program_version,
                 "contentList": combined_content_list,
                 "dependencies": combined_dependencies,
