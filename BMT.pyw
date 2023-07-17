@@ -432,6 +432,8 @@ class MergeToolGUI:
             except demjson3.JSONDecodeError as e:
                 print("Unable to fix JSON:", e)
                 return None
+        except FileNotFoundError:
+            return None
 
     def update_dependency_names(s, dependencies):
         updated_dependencies = {}
