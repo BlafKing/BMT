@@ -16,17 +16,16 @@ from tkinter import ttk, filedialog, messagebox, simpledialog
 
 class MergeToolGUI:
     def __init__(s):
-        
         appdata_dir = os.path.join(os.getenv('LOCALAPPDATA'), 'BMT')
         os.makedirs(appdata_dir, exist_ok=True)
         s.settings_file = os.path.join(appdata_dir, 'settings.cfg')
-        
+
         if not os.path.exists(s.settings_file):
             open(s.settings_file, 'a').close()
-        
+
         s.last_files_folder = s.load_last_folder("last_files_folder")
         s.last_save_folder = s.load_last_folder("last_save_folder")
-        
+
         s.dir = os.path.dirname(os.path.abspath(__file__))
         if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
             s.theme_path = sys._MEIPASS + '\\azure.tcl'
@@ -34,7 +33,7 @@ class MergeToolGUI:
         else:
             s.theme_path = os.path.join(s.dir, 'azure.tcl')
             s.icon_path = os.path.join(s.dir, 'icon.ico')
-        
+
         s.var_files = []
         s.artist_name = ""
         s.package_name = ""
@@ -70,7 +69,7 @@ class MergeToolGUI:
         s.file_scrollbar.config(command=s.file_listbox.yview)
 
         s.add_file_button = ttk.Button(s.root, text="Select Files", command=s.select_var_files, width=wide_button_width)
-        s.add_file_button.pack(padx=10, pady=5)
+        s.add_file_button.pack(padx=10, pady=(5, 2))
 
         s.save_frame = ttk.Frame(s.root)
         s.save_frame.pack(fill=tk.X, padx=10, pady=(10, 5))
@@ -87,7 +86,7 @@ class MergeToolGUI:
         s.save_button.pack(side=tk.LEFT, padx=(5, 0))
 
         s.edit_frame = ttk.Frame(s.root)
-        s.edit_frame.pack(fill=tk.X, padx=50, pady=(5, 0))    
+        s.edit_frame.pack(fill=tk.X, padx=50, pady=(10, 0))
 
         s.edit_artist_button = ttk.Button(s.edit_frame, text="Edit Artist Name", command=s.edit_artist_name, width=button_width)
         s.edit_artist_button.pack(side=tk.LEFT, pady=(5, 0))
@@ -99,7 +98,7 @@ class MergeToolGUI:
         s.edit_package_button.pack(pady=(5, 0))
 
         s.merge_frame = ttk.Frame(s.root)
-        s.merge_frame.pack(fill=tk.X, padx=0, pady=(25, 0))
+        s.merge_frame.pack(fill=tk.X, padx=0, pady=(15, 0))
 
         s.checkboxes_frame = ttk.Frame(s.merge_frame)
         s.checkboxes_frame.pack(side=tk.LEFT, padx=(12, 0))
@@ -112,17 +111,25 @@ class MergeToolGUI:
         s.closeProgram = tk.IntVar()
         s.closeProgram.set(s.load_checkbox_state(2))
         s.merge_checkbox2 = ttk.Checkbutton(s.checkboxes_frame, variable=s.closeProgram, command=s.update_checkbox_state)
-        s.merge_checkbox2.pack(side=tk.TOP, pady=(3,3))
+        s.merge_checkbox2.pack(side=tk.TOP)
+
+        s.updateMeta = tk.IntVar()
+        s.updateMeta.set(s.load_checkbox_state(3))
+        s.merge_checkbox3 = ttk.Checkbutton(s.checkboxes_frame, variable=s.updateMeta, command=s.update_checkbox_state)
+        s.merge_checkbox3.pack(side=tk.TOP)
 
         s.labels_frame = ttk.Frame(s.merge_frame)
         s.labels_frame.pack(side=tk.LEFT)
 
         label1 = ttk.Label(s.labels_frame, text="Open folder after merge", anchor=tk.W)
-        label1.pack(side=tk.TOP, anchor=tk.W, pady=(0, 10))
+        label1.pack(side=tk.TOP, anchor=tk.W)
 
         label2 = ttk.Label(s.labels_frame, text="Exit program after merge", anchor=tk.W)
-        label2.pack(side=tk.TOP, anchor=tk.W, pady=(0, 5))
+        label2.pack(side=tk.TOP, anchor=tk.W, pady=(7, 7))
 
+        label3 = ttk.Label(s.labels_frame, text="Set dependencies to .latest", anchor=tk.W)
+        label3.pack(side=tk.TOP, anchor=tk.W, pady=(0, 2))
+        
         s.button_frame = ttk.Frame(s.merge_frame)
         s.button_frame.pack(side=tk.LEFT, fill=tk.X, expand=True)
 
@@ -131,7 +138,7 @@ class MergeToolGUI:
 
         s.progress_label = ttk.Label(s.root, text="")
         s.progress_label.pack()
-        
+
         s.progressbar = ttk.Progressbar(s.root, orient=tk.HORIZONTAL, mode='determinate')
         s.progressbar.pack(side=tk.BOTTOM, fill=tk.X, padx=10, pady=5)
 
@@ -155,6 +162,7 @@ class MergeToolGUI:
     def update_checkbox_state(s):
         openFolder_state = s.openFolder.get()
         closeProgram_state = s.closeProgram.get()
+        updateMeta_state = s.updateMeta.get()
 
         with open(s.settings_file, 'r') as f:
             try:
@@ -164,6 +172,7 @@ class MergeToolGUI:
 
         settings["checkbox1"] = openFolder_state
         settings["checkbox2"] = closeProgram_state
+        settings["checkbox3"] = updateMeta_state
 
         with open(s.settings_file, 'w') as f:
             json.dump(settings, f)
@@ -196,25 +205,26 @@ class MergeToolGUI:
             s.save_last_folder("last_save_folder", folder_path)
 
     def edit_artist_name(s):
-        artist_name = s.get_user_input("Enter the new artist name:")
+        artist_name = s.get_user_input("Enter the new artist name:", default_text=s.artist_name)
         if artist_name:
             s.artist_name = artist_name.replace(" ", "_")
             s.update_save_location()
 
     def edit_package_name(s):
-        package_name = s.get_user_input("Enter the new package name:")
+        package_name = s.get_user_input("Enter the new package name:", default_text=s.package_name)
         if package_name:
             s.package_name = package_name.replace(" ", "_")
             s.update_save_location()
 
     def edit_version_number(s):
-        version_number = s.get_user_input("Enter the new version number:")
+        version_number = s.get_user_input("Enter the new version number:", default_text=s.version_number)
         if version_number:
             s.version_number = version_number
             s.update_save_location()
 
-    def get_user_input(s, prompt):
-        user_input = simpledialog.askstring("Input", prompt)
+    def get_user_input(s, prompt, default_text=None):
+        initial_value = default_text if default_text is not None else ""
+        user_input = simpledialog.askstring("Input", prompt, initialvalue=initial_value)
         return user_input.strip() if user_input else None
 
     def save_last_folder(s, folder_name, folder_path):
@@ -274,6 +284,7 @@ class MergeToolGUI:
         s.merge_button.config(state=other_state, style=other_color)
         s.merge_checkbox1.config(state=add_file_state)
         s.merge_checkbox2.config(state=add_file_state)
+        s.merge_checkbox3.config(state=add_file_state)
 
     def disable_buttons_init(s):
         s.button_style.configure("White.TButton", foreground="white")
@@ -393,6 +404,31 @@ class MergeToolGUI:
                 print("Unable to fix JSON:", e)
                 return None
 
+    def update_dependency_names(s, dependencies):
+        updated_dependencies = {}
+        for dep, dep_data in dependencies.items():
+            if dep.endswith(".latest"):
+                updated_dependencies[dep] = dep_data
+            else:
+                dep_components = dep.split(".")
+                last_component = dep_components[-1]
+                if last_component.isdigit():
+                    updated_dep_name = dep[:dep.rfind(".")] + ".latest"
+                    updated_dependencies[updated_dep_name] = dep_data
+                else:
+                    updated_dependencies[dep] = dep_data
+
+            sub_dependencies = dep_data.get("dependencies")
+            if sub_dependencies:
+                updated_sub_dependencies = s.update_dependency_names(sub_dependencies)
+                if updated_sub_dependencies:
+                    if dep in updated_dependencies:
+                        updated_dependencies[dep]["dependencies"] = updated_sub_dependencies
+                    else:
+                        updated_dependencies[dep] = {"dependencies": updated_sub_dependencies}
+
+        return updated_dependencies
+
     def merge_files(s):
         try:
             combined_content_list = set()
@@ -410,7 +446,6 @@ class MergeToolGUI:
                         for file_name in file_list:
                             try:
                                 zip_ref.open(file_name)
-                                
                             except BadZipFile:
                                 unusable_files.append(file_path)
                                 break
@@ -425,18 +460,16 @@ class MergeToolGUI:
                 if response == 'no':
                     os._exit(0)
 
-            temp_output_file = tempfile.NamedTemporaryFile(delete=False)
-
-            with zipfile.ZipFile(temp_output_file.name, 'w', zipfile.ZIP_DEFLATED) as zipf:
+            output_drive = os.path.splitdrive(s.output_file)[0]
+            with zipfile.ZipFile(s.output_file, 'w', zipfile.ZIP_DEFLATED) as zipf:
                 for i, file_path in enumerate(s.var_files):
-                    s.update_progress(i + 1)
-                    
+
                     if file_path in unusable_files:
                         continue
 
                     s.progress_label.configure(text=f"Merging files: {file_path}")
 
-                    temp_dir = tempfile.mkdtemp()
+                    temp_dir = tempfile.mkdtemp(dir=output_drive)
                     with zipfile.ZipFile(file_path, 'r') as zip_ref:
                         zip_ref.extractall(temp_dir)
 
@@ -444,16 +477,20 @@ class MergeToolGUI:
                     meta_data = s.load_valid_json_file(meta_file)
                     if meta_data is None:
                         unusable_files.append(file_path)
-                        shutil.rmtree(temp_dir)
                         continue
 
                     combined_content_list.update(meta_data.get("contentList", []))
 
                     dependencies = meta_data.get("dependencies")
-                    if dependencies:
-                        for dep, dep_data in dependencies.items():
-                            combined_dependencies.setdefault(dep, {}).setdefault("dependencies", {}).update(
-                                dep_data.get("dependencies", {}))
+                    if s.updateMeta.get() == 1:
+                        if dependencies:
+                            updated_dependencies = s.update_dependency_names(dependencies)
+                            combined_dependencies.update(updated_dependencies)
+                    else:
+                        if dependencies:
+                            for dep, dep_data in dependencies.items():
+                                combined_dependencies.setdefault(dep, {}).setdefault("dependencies", {}).update(
+                                    dep_data.get("dependencies", {}))
 
                     program_version = meta_data.get("programVersion")
                     if program_version and (highest_program_version is None or program_version > highest_program_version):
@@ -497,14 +534,11 @@ class MergeToolGUI:
                 "referenceIssues": []
             }
 
-            with zipfile.ZipFile(temp_output_file.name, 'a', zipfile.ZIP_DEFLATED) as zipf:
+            with zipfile.ZipFile(s.output_file, 'a', zipfile.ZIP_DEFLATED) as zipf:
                 zipf.writestr("meta.json", json.dumps(combined_meta_data, indent=3))
 
-            temp_output_file.close()
-
-            shutil.move(temp_output_file.name, s.output_file)
             s.progress_label.configure(text=f"Merging completed!")
-            
+
             if unusable_files:
                 messagebox.showinfo(
                     "Merge Complete",
@@ -517,11 +551,11 @@ class MergeToolGUI:
                 subprocess.Popen(f'explorer /select,"{s.output_file}"')
 
             if s.closeProgram.get() == 1:
-                os._exit(0) 
+                os._exit(0)
             else:
                 s.clean_window()
                 s.disable_buttons_init()
-                
+
         except Exception as e:
             error_message = f"Exception occurred during merge:\n{traceback.format_exc()}"
 
@@ -534,6 +568,7 @@ class MergeToolGUI:
             with open(errorlog_path, "w") as errorlog_file:
                 errorlog_file.write(error_message)
             messagebox.showerror("Merge Error", f"An error occurred during the merge process. Error log saved to: {errorlog_path}")
+            shutil.rmtree(temp_dir)
             os._exit(1)
 
     def update_progress(s, value):
