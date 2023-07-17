@@ -184,6 +184,7 @@ class MergeToolGUI:
             s.display_selected_files()
             s.enable_buttons_file()
             s.save_last_folder("last_files_folder", os.path.dirname(s.var_files[0]))
+            s.update_artist_name()
             s.save_entry.delete(0, tk.END)
             s.output_file = ""
 
@@ -203,7 +204,19 @@ class MergeToolGUI:
             s.SaveLocation = False
             s.enable_buttons()
             s.save_last_folder("last_save_folder", folder_path)
+            s.update_artist_name()
 
+    def update_artist_name(s):
+        artist_name_counts = Counter()
+        for file_path in s.var_files:
+            file_name = os.path.basename(file_path)
+            artist_name = file_name.split(".")[0]
+            artist_name_counts[artist_name] += 1
+
+        artist = artist_name_counts.most_common(1)
+        s.artist_name = artist[0][0] if artist else ""
+        s.update_save_location()
+    
     def edit_artist_name(s):
         artist_name = s.get_user_input("Enter the new artist name:", default_text=s.artist_name)
         if artist_name:
@@ -555,6 +568,7 @@ class MergeToolGUI:
             else:
                 s.clean_window()
                 s.disable_buttons_init()
+                return
 
         except Exception as e:
             error_message = f"Exception occurred during merge:\n{traceback.format_exc()}"
