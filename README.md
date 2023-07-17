@@ -19,7 +19,8 @@ This script can be used both as a packaged .exe or as a python script.
 4. Select a save location
 5. Click 'Merge Files'  
 
-NOTE: Using the option to set the dependencies to .latest can break some packages! (not any existing packages)
+NOTE: Using the option to set the dependencies to .latest is incompatible with some packages!  
+Please turn it off if you're experiencing issues.
 
 ### Python:
 1. Make sure [Python](https://www.python.org/downloads/) is installed (I used Python 3.11)
@@ -31,4 +32,5 @@ NOTE: Using the option to set the dependencies to .latest can break some package
 7. Select a save location  
 8. Click 'Merge Files'  
 
-NOTE: Using the option to set the dependencies to .latest can break some packages! (not any existing packages)
+NOTE: Using the option to set the dependencies to .latest is incompatible with some packages!  
+Please turn it off if you're experiencing issues.
