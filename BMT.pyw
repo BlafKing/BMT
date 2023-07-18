@@ -183,10 +183,13 @@ class MergeToolGUI:
             s.var_files = list(file_paths)
             s.display_selected_files()
             s.enable_buttons_file()
-            s.save_last_folder("last_files_folder", os.path.dirname(s.var_files[0]))
+            folder_path = os.path.dirname(s.var_files[0])
+            s.save_last_folder("last_files_folder", folder_path)
             s.update_artist_name()
             s.save_entry.delete(0, tk.END)
             s.output_file = ""
+            
+            s.last_files_folder = folder_path
 
     def display_selected_files(s):
         s.file_listbox.delete(0, tk.END)
@@ -205,6 +208,8 @@ class MergeToolGUI:
             s.enable_buttons()
             s.save_last_folder("last_save_folder", folder_path)
             s.update_artist_name()
+
+            s.last_save_folder = folder_path
 
     def update_artist_name(s):
         artist_name_counts = Counter()
@@ -376,7 +381,7 @@ class MergeToolGUI:
 
         s.merge_files()
     
-    def load_valid_json_file(s, file_path):
+    def load_valid_json_file(s, file_path, temp_dir):
         try:
             with open(file_path, 'r', encoding='utf-8-sig') as f:
                 return json.load(f)
@@ -432,36 +437,12 @@ class MergeToolGUI:
             except demjson3.JSONDecodeError as e:
                 print("Unable to fix JSON:", e)
                 return None
-        except FileNotFoundError:
+        except:
             return None
-
-    def update_dependency_names(s, dependencies):
-        updated_dependencies = {}
-        for dep, dep_data in dependencies.items():
-            if dep.endswith(".latest"):
-                updated_dependencies[dep] = dep_data
-            else:
-                dep_components = dep.split(".")
-                last_component = dep_components[-1]
-                if last_component.isdigit():
-                    updated_dep_name = dep[:dep.rfind(".")] + ".latest"
-                    updated_dependencies[updated_dep_name] = dep_data
-                else:
-                    updated_dependencies[dep] = dep_data
-
-            sub_dependencies = dep_data.get("dependencies")
-            if sub_dependencies:
-                updated_sub_dependencies = s.update_dependency_names(sub_dependencies)
-                if updated_sub_dependencies:
-                    if dep in updated_dependencies:
-                        updated_dependencies[dep]["dependencies"] = updated_sub_dependencies
-                    else:
-                        updated_dependencies[dep] = {"dependencies": updated_sub_dependencies}
-
-        return updated_dependencies
 
     def merge_files(s):
         try:
+            appdata_dir = os.path.join(os.getenv('LOCALAPPDATA'), 'BMT')
             combined_content_list = set()
             combined_dependencies = {}
 
@@ -505,7 +486,7 @@ class MergeToolGUI:
                         zip_ref.extractall(temp_dir)
 
                     meta_file = os.path.join(temp_dir, "meta.json")
-                    meta_data = s.load_valid_json_file(meta_file)
+                    meta_data = s.load_valid_json_file(meta_file, temp_dir)
                     if meta_data is None:
                         unusable_files.append(file_path)
                         continue
@@ -513,15 +494,13 @@ class MergeToolGUI:
                     combined_content_list.update(meta_data.get("contentList", []))
 
                     dependencies = meta_data.get("dependencies")
-                    if s.updateMeta.get() == 1:
-                        if dependencies:
-                            updated_dependencies = s.update_dependency_names(dependencies)
-                            combined_dependencies.update(updated_dependencies)
-                    else:
-                        if dependencies:
-                            for dep, dep_data in dependencies.items():
-                                combined_dependencies.setdefault(dep, {}).setdefault("dependencies", {}).update(
-                                    dep_data.get("dependencies", {}))
+                    if dependencies:
+                        for dep, dep_data in dependencies.items():
+                            dep_license_type = dep_data.get("licenseType")
+                            combined_dependencies.setdefault(dep, {}).update({
+                                "licenseType": dep_license_type,
+                                "dependencies": dep_data.get("dependencies", {})
+                            })
 
                     program_version = meta_data.get("programVersion")
                     if program_version and (highest_program_version is None or program_version > highest_program_version):
@@ -565,9 +544,21 @@ class MergeToolGUI:
                 "referenceIssues": []
             }
 
-            with zipfile.ZipFile(s.output_file, 'a', zipfile.ZIP_DEFLATED) as zipf:
-                zipf.writestr("meta.json", json.dumps(combined_meta_data, indent=3))
+            temp_meta_file = os.path.join(appdata_dir, "temp_meta.json")
+            with open(temp_meta_file, 'w') as file:
+                json.dump(combined_meta_data, file, indent=3)
 
+            if s.updateMeta.get() == 1:
+                optimized_meta = s.setToLatest(temp_meta_file)
+            else:
+                with open(temp_meta_file, 'r') as file:
+                    optimized_meta = json.load(file)
+            
+            with zipfile.ZipFile(s.output_file, 'a', zipfile.ZIP_DEFLATED) as zipf:
+                zipf.writestr("meta.json", json.dumps(optimized_meta, indent=3))
+                
+            os.remove(temp_meta_file)
+            
             s.progress_label.configure(text=f"Merging completed!")
 
             if unusable_files:
@@ -602,7 +593,29 @@ class MergeToolGUI:
             messagebox.showerror("Merge Error", f"An error occurred during the merge process. Error log saved to: {errorlog_path}")
             shutil.rmtree(temp_dir)
             os._exit(1)
+    
+    def setToLatest(s, meta_file):
+        with open(meta_file, 'r') as file:
+            data = json.load(file)
 
+        dependencies = data.get('dependencies', {})
+        optimized_data = data.copy()
+
+        def rename_dependencies(dep_dict):
+            for dep_name, dep_data in dep_dict.copy().items():
+                package_name, version = dep_name.rsplit('.', 1)
+                package_name_latest = package_name + '.latest'
+                if package_name_latest != dep_name:
+                    dep_dict[package_name_latest] = dep_dict.pop(dep_name)
+
+                nested_dependencies = dep_data.get('dependencies', {})
+                if nested_dependencies:
+                    rename_dependencies(nested_dependencies)
+
+        rename_dependencies(dependencies)
+
+        return optimized_data
+    
     def update_progress(s, value):
         s.progressbar["value"] = value
         s.root.update_idletasks()
